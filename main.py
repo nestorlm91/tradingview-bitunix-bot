@@ -1,19 +1,27 @@
 import os
+import json
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Salud / prueba (lo que ya te funciona)
 @app.get("/")
 def home():
-    return jsonify(status="ok")
+    return jsonify(status="ok", service="tradingview-bitunix-bot")
 
-# Webhook de TradingView (aquí llegarán las señales)
 @app.post("/webhook")
 def webhook():
-    data = request.get_json(silent=True) or {}
-    # Por ahora solo confirmamos que recibimos algo
-    return jsonify(received=True, data=data)
+    data = request.get_json(silent=True)
+
+    # Si no llegó como JSON, intenta leer como texto y convertirlo
+    if data is None:
+        raw = request.get_data(as_text=True)
+        try:
+            data = json.loads(raw) if raw else {"raw": ""}
+        except Exception:
+            data = {"raw": raw}
+
+    print("✅ WEBHOOK DATA:", data)
+    return jsonify(received=True), 200
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "10000"))
